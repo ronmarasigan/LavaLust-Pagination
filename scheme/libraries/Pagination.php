@@ -270,13 +270,13 @@ class Pagination
                     $active = '';
 
                 $this->pagination .= '
-                    <li class="'.$this->classes['li'].' '.$active.'"><a class="'.$this->classes['a'].'" href="'.site_url($this->page_array['url']).''.$this->page_delimiter.''.(int)$pages.'">'.(int)$pages.'</a></li>
+                    <li class="'.$this->classes['li'].' '.$active.'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.(int)$pages.'">'.(int)$pages.'</a></li>
                 ';
             }
 
             $this->pagination .= '
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['next'].'">'.$this->next_link.'</a></li>
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['last'].'">'.$this->last_link.'</a></li>
+                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['next'].'">'.$this->next_link.'</a></li>
+                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['last'].'">'.$this->last_link.'</a></li>
                 </ul>
             </nav>
             ';

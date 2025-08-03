@@ -53,10 +53,9 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 |
 | These are the things you can load automatically:
 |
-| 1. Helper functions
+| 1. Helpers
 | 2. Models
 | 3. Libraries
-| 4. Custom config files
 |
 */
 
@@ -72,7 +71,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 |
 |	$autoload['libraries'] = array('database', 'email', 'session');
 */
-$autoload['libraries'] = array();
+$autoload['libraries'] = array('database', 'pagination', 'form_validation');
 
 /*
 | -------------------------------------------------------------------
@@ -80,9 +79,9 @@ $autoload['libraries'] = array();
 | -------------------------------------------------------------------
 | Prototype:
 |
-|	$autoload['helpers'] = array('url', 'file');
+|	$autoload['helper'] = array('url', 'file');
 */
-$autoload['helpers'] = array();
+$autoload['helpers'] = array('url');
 
 /*
 | -------------------------------------------------------------------
@@ -90,9 +89,9 @@ $autoload['helpers'] = array();
 | -------------------------------------------------------------------
 | Prototype:
 |
-|	$autoload['models'] = array('model1_model', 'model2_model')
+|	$autoload['model'] = array('model1_model', 'model2_model')
 */
-$autoload['models'] = array();
+$autoload['models'] = array('author_model');
 
 /*
 | -------------------------------------------------------------------
@@ -100,7 +99,7 @@ $autoload['models'] = array();
 | -------------------------------------------------------------------
 | Prototype:
 |
-|	$autoload['configs'] = array('config1', 'config2');
+|	$autoload['config'] = array('config1', 'config2');
 |
 | NOTE: This item is intended for use ONLY if you have created custom
 | config files.  Otherwise, leave it blank.
