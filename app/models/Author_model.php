@@ -12,24 +12,31 @@
         }
 
         public function page($q, $records_per_page = null, $page = null) {
-        if(is_null($page)) {
-            return $this->db->table('authors')->get_all();
-        } else {
-            $data['records'] = $this->db->table('authors')
-                        ->like('id', '%'.$q.'%')
-                        ->or_like('first_name', '%'.$q.'%')
-                        ->or_like('last_name', '%'.$q.'%')
-                        ->or_like('birthdate', '%'.$q.'%')
-                        ->or_like('email', '%'.$q.'%')
-                        ->or_like('added', '%'.$q.'%')
-                        ->pagination($records_per_page, $page)
-                        ->get_all();
-            $data['total_rows'] = $this->db->raw("select count(*) from authors where id like :id or first_name like :first_name or last_name like :last_name or birthdate like :birthdate or email like :email or added like :address", array('%'.$q.'%', '%'.$q.'%', '%'.$q.'%', '%'.$q.'%', '%'.$q.'%', '%'.$q.'%'))->fetchColumn();
-            return $data;
+            if (is_null($page)) {
+                return $this->db->table('authors')->get_all();
+            } else {
+                $query = $this->db->table('authors');
+                
+                // Build LIKE conditions
+                $query->like('id', '%'.$q.'%')
+                    ->or_like('first_name', '%'.$q.'%')
+                    ->or_like('last_name', '%'.$q.'%')
+                    ->or_like('birthdate', '%'.$q.'%')
+                    ->or_like('email', '%'.$q.'%')
+                    ->or_like('added', '%'.$q.'%');
+
+                // Clone before pagination
+                $countQuery = clone $query;
+
+                $data['total_rows'] = $countQuery->select_count('*', 'count')
+                                                ->get()['count'];
+
+                $data['records'] = $query->pagination($records_per_page, $page)
+                                        ->get_all();
+
+                return $data;
+            }
         }
 
     }
-        
-    }
-    ?>
-    
+?>

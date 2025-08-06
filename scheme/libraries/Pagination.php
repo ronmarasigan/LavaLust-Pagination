@@ -29,260 +29,264 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  *
  * @package LavaLust
  * @author Ronald M. Marasigan <ronald.marasigan@yahoo.com>
- * @since Version 1
+ * @since Version 4
  * @link https://github.com/ronmarasigan/LavaLust
  * @license https://opensource.org/licenses/MIT MIT License
  */
-
 /**
-* ------------------------------------------------------
-*  Class Pagination
-* ------------------------------------------------------
+ * LavaLust Pagination Class
+ *
+ * Provides pagination logic and customizable rendering for different frontend styles.
  */
 class Pagination
 {
     /**
-     * Array to hold different page info
-     *
-     * @var array
+     * @var array Stores pagination metadata (limit, current page, etc.)
      */
-    protected $page_array = array();
+    protected $page_array = [];
 
     /**
-     * Page number
-     *
-     * @var int
+     * @var int Current page number
      */
     protected $page_num;
 
     /**
-     * Rows Per Page
-     *
-     * @var int
+     * @var int Number of rows per page
      */
     protected $rows_per_page;
 
     /**
-     * Crumbs
-     *
-     * @var int
+     * @var int Number of page links to show (crumbs)
      */
     protected $crumbs;
 
     /**
-     * Links
-     *
-     * @var string
+     * @var array Final output for render
      */
     protected $pagination;
 
     /**
-     * First link
-     *
-     * @var string
+     * @var string Label for "First" page link
      */
     protected $first_link = '&lsaquo; First';
 
     /**
-     * Next link
-     *
-     * @var string
+     * @var string Label for "Next" page link
      */
     protected $next_link = '&gt;';
 
     /**
-     * Previous link
-     *
-     * @var string
+     * @var string Label for "Previous" page link
      */
     protected $prev_link = '&lt;';
 
     /**
-     * Last link
-     *
-     * @var string
+     * @var string Label for "Last" page link
      */
     protected $last_link = 'Last &rsaquo;';
 
     /**
-     * Classes for CSS
-     *
-     * @var array
-     */
-    protected $classes = array();
-
-    /**
-     * Page delimiter
-     *
-     * @var string
+     * @var string Delimiter used between base URL and page number
      */
     protected $page_delimiter = '/';
+
     /**
-     * LavaLust Instance
-     *
-     * @var
+     * @var string Current theme layout: 'bootstrap', 'tailwind', or 'custom'
+     */
+    protected $theme = 'bootstrap';
+
+    /**
+     * @var array CSS class mappings for HTML generation
+     */
+    protected $classes = [
+        'nav'    => 'pagination-nav',
+        'ul'     => 'pagination-list',
+        'li'     => 'pagination-item',
+        'a'      => 'pagination-link',
+        'active' => 'active'
+    ];
+
+    /**
+     * @var object LavaLust core instance
      */
     protected $LAVA;
 
+    /**
+     * Constructor
+     *
+     * Loads language and session libraries and initializes labels
+     */
     public function __construct()
     {
         $this->LAVA =& lava_instance();
         $this->LAVA->call->helper('language');
         $this->LAVA->call->library('session');
 
-        //check if different language was set to session
-        //if no session page_language is set use the default language
-        if($this->LAVA->session->has_userdata('page_language'))
-        {
-            $set_language = $this->LAVA->session->userdata('page_language');
-        } else {
-            $set_language = config_item('language');
-        }
-
-        //set language
+        $set_language = $this->LAVA->session->userdata('page_language') ?? config_item('language');
         language($set_language);
 
-        foreach (array('first_link', 'next_link', 'prev_link', 'last_link', 'classes', 'page_delimiter') as $key)
-        {
-            $this->$key = lang($key);
+        foreach (['first_link', 'next_link', 'prev_link', 'last_link', 'page_delimiter'] as $key) {
+            $this->$key = lang($key) ?? $this->$key;
         }
 
+        $this->set_theme($this->theme);
     }
+
     /**
-     * Initialize Variables for Paging
+     * Set layout theme
      *
-     * @param int $total_rows
-     * @param int $rows_per_page
-     * @param int $page_num
+     * @param string $theme One of 'bootstrap', 'tailwind', or 'custom'
+     */
+    public function set_theme($theme)
+    {
+        $this->theme = $theme;
+        switch ($theme) {
+            case 'bootstrap':
+                $this->classes = [
+                    'nav'    => 'd-flex justify-content-center',
+                    'ul'     => 'pagination',
+                    'li'     => 'page-item',
+                    'a'      => 'page-link',
+                    'active' => 'active'
+                ];
+                break;
+            case 'tailwind':
+                $this->classes = [
+                    'nav'    => 'flex justify-center mt-4',
+                    'ul'     => 'inline-flex -space-x-px',
+                    'li'     => 'px-1',
+                    'a'      => 'py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700',
+                    'active' => 'bg-blue-500 text-white border-blue-500'
+                ];
+                break;
+            case 'custom':
+                // Custom classes can be set using set_custom_classes()
+                break;
+        }
+    }
+
+    /**
+     * Override specific CSS classes for layout
+     *
+     * @param array $classes Associative array of class types and values
+     */
+    public function set_custom_classes(array $classes)
+    {
+        $this->classes = array_merge($this->classes, $classes);
+    }
+
+    /**
+     * Set custom pagination options like links and delimiter.
+     *
+     * @param array $options
+     * @return void
+     */
+    public function set_options(array $options)
+    {
+        foreach ($options as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+    }
+
+    /**
+     * Initialize pagination values and logic
+     *
+     * @param int $total_rows Total number of database rows
+     * @param int $rows_per_page Rows to display per page
+     * @param int $page_num Current page number
+     * @param string $url Base URL for page links
+     * @param int $crumbs Number of visible page links
+     * @return array Metadata for pagination
      */
     public function initialize($total_rows, $rows_per_page, $page_num, $url, $crumbs = 5)
     {
         $this->crumbs = $crumbs;
         $this->rows_per_page = (int) $rows_per_page;
         $this->page_array['url'] = $url;
-        $last_page = ceil($total_rows / $this->rows_per_page);
-        $this->page_num = (int) $page_num;
 
-        if ($this->page_num < 1)
-        {
-           $this->page_num = 1;
-        } elseif ($this->page_num > $last_page) {
-           $this->page_num = $last_page;
-        }
+        $last_page = max(1, ceil($total_rows / $this->rows_per_page));
+        $this->page_num = max(1, min($page_num, $last_page));
 
         $offset = ($this->page_num - 1) * $this->rows_per_page;
-        $this->page_array['limit'] = 'LIMIT '.$offset.',' .$this->rows_per_page;
+        $this->page_array['limit'] = 'LIMIT '.$offset.','.$this->rows_per_page;
         $this->page_array['current'] = $this->page_num;
-
-        if ($this->page_num == 1)
-        {
-            $this->page_array['previous'] = $this->page_num;
-        } else {
-            $this->page_array['previous'] = $this->page_num - 1;
-        }
-
-        if ($this->page_num == $last_page)
-        {
-            $this->page_array['next'] = $last_page;
-        } else {
-            $this->page_array['next'] = $this->page_num + 1;
-        }
-
+        $this->page_array['previous'] = max(1, $this->page_num - 1);
+        $this->page_array['next'] = min($last_page, $this->page_num + 1);
         $this->page_array['last'] = $last_page;
         $this->page_array['info'] = 'Page ('.$this->page_num.' of '.$last_page.')';
-        $this->page_array['pages'] = $this->render_pages($this->page_num, $last_page, $this->page_array['next']);
+        $this->page_array['pages'] = $this->render_pages($this->page_num, $last_page);
 
         return $this->page_array;
     }
 
     /**
-     * Calculate then Render Pages
+     * Generate array of page numbers to display
      *
-     * @param  int $page_num
-     * @param  int $last_page
-     * @param  int $next
-     * @return array
+     * @param int $page_num Current page
+     * @param int $last_page Last page number
+     * @return array List of visible page numbers
      */
-    public function render_pages($page_num, $last_page, $next)
+    protected function render_pages($page_num, $last_page)
     {
-        $arr = array();
-
-        if ($page_num == 1)
-        {
-            if ($next == $page_num) return array(1);
-            for ($i = 0; $i < $this->crumbs; $i++)
-            {
-                if ($i == $last_page) break;
-                array_push($arr, $i + 1);
+        $arr = [];
+        if ($page_num == 1) {
+            for ($i = 0; $i < min($this->crumbs, $last_page); $i++) {
+                $arr[] = $i + 1;
             }
-            return $arr;
-        }
-
-        if ($page_num == $last_page)
-        {
-            $start = $last_page - $this->crumbs;
-            if ($start < 1) $start = 0;
-            for ($i = $start; $i < $last_page; $i++)
-            {
-                array_push($arr, $i + 1);
+        } elseif ($page_num == $last_page) {
+            $start = max(0, $last_page - $this->crumbs);
+            for ($i = $start; $i < $last_page; $i++) {
+                $arr[] = $i + 1;
             }
-            return $arr;
-        }
-
-        $start = $page_num - ceil($this->crumbs / 2);
-        $end = $page_num + floor($this->crumbs / 2 );
-        if ($end >= $last_page) $start = $last_page - $this->crumbs;
-        if ($start < 0) { $start = 0; $end = $this->crumbs; }
-        for ($i = $start; $i < $end; $i++)
-        {
-            if ($i == $last_page) break;
-            array_push($arr, $i + 1);
+        } else {
+            $start = max(0, $page_num - ceil($this->crumbs / 2));
+            $end = min($last_page, $start + $this->crumbs);
+            for ($i = $start; $i < $end; $i++) {
+                $arr[] = $i + 1;
+            }
         }
         return $arr;
     }
 
     /**
-     * Render the Output
+     * Render the full pagination HTML
      *
-     * @return string
+     * @return string HTML output
      */
     public function paginate()
     {
-        if(! empty($this->page_array['pages'])) {
-            $this->pagination = '
-                <nav class="'.$this->classes['nav'].'">
-                    <ul class="'.$this->classes['ul'].'">
-            ';
+        if (empty($this->page_array['pages'])) return '';
 
-            $this->pagination .= '
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="'.site_url($this->page_array['url']).''.$this->page_delimiter.'1">'.$this->first_link.'</a></li>
-            ';
-            $this->pagination .= '
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['previous'].'">'.$this->prev_link.'</a></li>
-            ';
+        $html = '<nav class="'.$this->classes['nav'].'"><ul class="'.$this->classes['ul'].'">';
 
-            foreach($this->page_array['pages'] as $pages)
-            {
+        $html .= $this->build_link(1, $this->first_link);
+        $html .= $this->build_link($this->page_array['previous'], $this->prev_link);
 
-                if($pages == $this->page_array['current'])
-                    $active = $this->classes['active'];
-                else
-                    $active = '';
-
-                $this->pagination .= '
-                    <li class="'.$this->classes['li'].' '.$active.'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.(int)$pages.'">'.(int)$pages.'</a></li>
-                ';
-            }
-
-            $this->pagination .= '
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['next'].'">'.$this->next_link.'</a></li>
-                <li class="'.$this->classes['li'].'"><a class="'.$this->classes['a'].'" href="/'.site_url($this->page_array['url']).''.$this->page_delimiter.''.$this->page_array['last'].'">'.$this->last_link.'</a></li>
-                </ul>
-            </nav>
-            ';
-            return $this->pagination;
+        foreach ($this->page_array['pages'] as $page) {
+            $active = ($page == $this->page_array['current']) ? $this->classes['active'] : '';
+            $html .= $this->build_link($page, $page, $active);
         }
+
+        $html .= $this->build_link($this->page_array['next'], $this->next_link);
+        $html .= $this->build_link($this->page_array['last'], $this->last_link);
+
+        $html .= '</ul></nav>';
+        return $html;
+    }
+
+    /**
+     * Generate an individual page link
+     *
+     * @param int $page Target page number
+     * @param string $label Link text
+     * @param string $active_class Optional active class
+     * @return string HTML list item with link
+     */
+    protected function build_link($page, $label, $active_class = '')
+    {
+        $url = site_url($this->page_array['url'].$this->page_delimiter.$page);
+        return '<li class="'.$this->classes['li'].' '.$active_class.'"><a class="'.$this->classes['a'].'" href="'.$url.'">'.$label.'</a></li>';
     }
 }
-
-?>

@@ -57,8 +57,20 @@ if ( ! function_exists('site_url'))
 	 */
 	function site_url($url = '')
 	{
-		$base_url = filter_var(BASE_URL, FILTER_SANITIZE_URL);
-		return ! empty(config_item('index_page')) ? $base_url . config_item('index_page').'/' . $url : $base_url . $url;
+		$base_url = rtrim(filter_var(BASE_URL, FILTER_SANITIZE_URL), '/');
+		$index_page = trim(config_item('index_page'), '/');
+		$url = ltrim($url, '/');
+
+		if (!empty($index_page) && strpos($url, $index_page) === 0) {
+			$url = substr($url, strlen($index_page));
+			$url = ltrim($url, '/');
+		}
+
+		if (!empty($index_page)) {
+			return "{$base_url}/{$index_page}/{$url}";
+		}
+
+		return "{$base_url}/{$url}";		
 	}
 }
 
