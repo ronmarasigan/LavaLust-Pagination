@@ -55,6 +55,11 @@ class Database {
     private $db = NULL;
 
     /**
+     * Database Driver
+     */
+    private $driver;
+
+    /**
      * DB Prefix
      *
      * @var string
@@ -189,7 +194,7 @@ class Database {
     public function __construct($dbname = NULL)
     {
         if(is_null($dbname)) {
-            $database_config =& database_config()['main'];
+        $database_config =& database_config()['main'];
         } else {
             if(isset(database_config()[$dbname])) {
                 $database_config =& database_config()[$dbname];
@@ -198,15 +203,34 @@ class Database {
             }
         }
         $this->dbprefix = $database_config['dbprefix'];
-        $driver = $database_config['driver'];
+        $driver = strtolower($database_config['driver']);
         $charset = $database_config['charset'];
-        $dbost = $database_config['hostname'];
+        $host = $database_config['hostname'];
         $port = $database_config['port'];
-        $dbname = $database_config['database'];
-        $dbuser = $database_config['username'];
-        $dbpass = $database_config['password'];
+        $dbname_value = $database_config['database'];
+        $username = $database_config['username'];
+        $password = $database_config['password'];
+        $path = isset($database_config['path']) ? $database_config['path'] : null;
 
-        $dsn = ''.$driver.':host=' . $dbost . ';dbname=' . $dbname . ';charset=' . $charset . ';port=' . $port;
+        switch ($driver) {
+            case 'mysql':
+                $dsn = "mysql:host=$host;dbname=$dbname_value;charset=$charset;port=$port";
+                break;
+            case 'pgsql':
+                $dsn = "pgsql:host=$host;port=$port;dbname=$dbname_value;user=$username;password=$password";
+                break;
+            case 'sqlite':
+                if (empty($path)) {
+                    throw new PDOException('SQLite requires a valid file path.');
+                }
+                $dsn = "sqlite:$path";
+                break;
+            case 'sqlsrv':
+                $dsn = "sqlsrv:Server=$host,$port;Database=$dbname_value";
+                break;
+            default:
+                throw new PDOException("Unsupported database driver: $driver");
+        }
 
         $options = array(
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -215,7 +239,8 @@ class Database {
         );
 
         try {
-            $this->db = new PDO($dsn, $dbuser, $dbpass, $options);
+            $this->db = new PDO($dsn, $username, $password, $options);
+             $this->driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         } catch (Exception $e) {
             throw new PDOException($e->getMessage());
         }
@@ -260,17 +285,35 @@ class Database {
     {
         $this->sql .= $this->where;
         $this->getSQL = $this->sql;
+
         try {
             $stmt = $this->db->prepare($this->sql);
             $stmt->execute($this->bindValues);
-            if (strpos( strtoupper($this->sql), "INSERT" ) === 0 ) {
+
+            if (stripos($this->sql, 'INSERT') === 0) {
+                $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+                if ($driver === 'pgsql') {
+                    // Try to detect primary key and use RETURNING
+                    if (strpos($this->sql, 'RETURNING') === false) {
+                        // Automatically add RETURNING if not already there
+                        $this->sql .= ' RETURNING id';
+                        $stmt = $this->db->prepare($this->sql);
+                        $stmt->execute($this->bindValues);
+                    }
+
+                    $this->lastIDInserted = (int) $stmt->fetchColumn();
+                    return $this->lastIDInserted;
+                }
+
+                // MySQL, SQLite, SQL Server
                 $this->lastIDInserted = (int) $this->db->lastInsertId();
                 return $this->lastIDInserted;
             } else {
                 return $stmt->rowCount();
             }
-        } catch(Exception $e) {
-            throw new PDOException($e->getMessage().'<div style="background-color:#000;color:#fff;padding:15px">Query: '.$this->getSQL.'</div>');
+        } catch (Exception $e) {
+            throw new PDOException($e->getMessage() . '<div style="background-color:#000;color:#fff;padding:15px">Query: ' . $this->getSQL . '</div>');
         }
     }
 
@@ -1036,13 +1079,37 @@ class Database {
      * @param  integer $offset
      * @return object
      */
-    public function limit($limit, $end = NULL)
+    public function limit($limit, $end = null)
     {
-        $this->limit = ' LIMIT ';
-        if ($end == NULL ) {
-            $this->limit .= $limit;
-        }else{
-            $this->limit .= $limit .', '. $end;
+        $driver = $this->driver; // Assume this is already set in your PDO wrapper
+
+        if ($end === null) {
+            // Only a limit value
+            switch ($driver) {
+                case 'mysql':
+                case 'pgsql':
+                case 'sqlite':
+                    $this->limit = " LIMIT $limit";
+                    break;
+                case 'sqlsrv':
+                    // Note: LIMIT not supported directly in SQL Server
+                    $this->limit = " OFFSET 0 ROWS FETCH NEXT $limit ROWS ONLY";
+                    break;
+            }
+        } else {
+            // Limit and offset
+            switch ($driver) {
+                case 'mysql':
+                    $this->limit = " LIMIT $limit, $end";
+                    break;
+                case 'pgsql':
+                case 'sqlite':
+                    $this->limit = " LIMIT $end OFFSET $limit";
+                    break;
+                case 'sqlsrv':
+                    $this->limit = " OFFSET $limit ROWS FETCH NEXT $end ROWS ONLY";
+                    break;
+            }
         }
 
         return $this;

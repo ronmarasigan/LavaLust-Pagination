@@ -70,8 +70,9 @@ if ( ! function_exists('site_url'))
 			return "{$base_url}/{$index_page}/{$url}";
 		}
 
-		return "{$base_url}/{$url}";		
+		return "{$base_url}/{$url}";
 	}
+
 }
 
 if ( ! function_exists('redirect'))

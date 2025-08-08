@@ -230,7 +230,7 @@ class Router
         if ($this->is_method_accessible($controller_instance, $method)) {
             call_user_func_array([$controller_instance, $method], array_values($params));
         } else {
-            throw new RuntimeException('Method '. $controller.'::'.$method .' is inaccessible or nonexistent.');
+            throw new RuntimeException('Method '. $controller.'->'.$method .' is inaccessible or nonexistent.');
         }
     }
 
@@ -287,30 +287,47 @@ class Router
     private function execute_callback($url, $route)
     {
         $matches = [];
-        if(preg_match($this->convert_to_regex_pattern($route['url'], $route['constraints']), $url, $matches))
-        {
+        if (preg_match($this->convert_to_regex_pattern($route['url'], $route['constraints']), $url, $matches)) {
             array_shift($matches);
 
             $callback = $route['callback'];
 
             if (is_string($callback)) {
-                if(strpos($callback, '::') !== false) {
+                $controller = '';
+                $method = 'index';
+
+                if (strpos($callback, '::') !== false) {
                     [$controller, $method] = explode('::', $callback);
+                } elseif (strpos($callback, '->') !== false) {
+                    [$controller, $method] = explode('->', $callback);
+                } elseif (strpos($callback, '@') !== false) {
+                    [$controller, $method] = explode('@', $callback);
                 } else {
-                    [$controller, $method] = [$callback, 'index'];
+                    $controller = $callback;
+                    $method = 'index';
                 }
-                $app = APP_DIR .'controllers/'. ucfirst($controller) . '.php';
-                if(file_exists($app)){
-                    require_once($app);
-                    $this->call_controller_method($controller, $method, $matches);
+
+                $controller_file = APP_DIR . 'controllers/' . ucfirst($controller) . '.php';
+
+                if (file_exists($controller_file)) {
+
+                    require_once($controller_file);
+
+                    $instance = new $controller();
+                    if (method_exists($instance, $method)) {
+                        call_user_func_array([$instance, $method], $matches);
+                    } else {
+                        throw new RuntimeException("Method {$controller}->{$method} does not exist.");
+                    }
                 } else {
-                    throw new RuntimeException('Controller '. $controller .' does not exist.');
+                    throw new RuntimeException("Controller {$controller} does not exist.");
                 }
             } elseif (is_callable($callback)) {
-                call_user_func_array($callback,  array_values($matches));
+                call_user_func_array($callback, array_values($matches));
             } else {
-                throw new RuntimeException('Invalid callback '. $matches);
+                throw new RuntimeException('Invalid callback.');
             }
+
             return;
         }
     }

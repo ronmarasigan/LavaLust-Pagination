@@ -39,21 +39,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 *  Class Model / ORM
 * ------------------------------------------------------
  */
-class Model {
-   
-    /**
-     * Class Constructor
-     * @return void
-     */
-    public function __construct()
-    {
-        //Allow Soft Delete
-        $this->has_soft_delete = config_item('soft_delete');
-        
-        //Soft Delete Column
-        $this->soft_delete_column = config_item('soft_delete_column');
-    }
-    
+class Model {  
     /**
      * Table Name of the Database
      *
@@ -81,6 +67,19 @@ class Model {
      * @var boolean
      */
     protected $has_soft_delete;
+
+      /**
+     * Class Constructor
+     * @return void
+     */
+    public function __construct()
+    {
+        //Allow Soft Delete
+        $this->has_soft_delete = config_item('soft_delete');
+        
+        //Soft Delete Column
+        $this->soft_delete_column = config_item('soft_delete_column');
+    }
 
     /**
      * Filter input data to only include fillable attributes
@@ -342,13 +341,13 @@ class Model {
     }
 
     /**
-     * Where Clause
+     * Filter using where Clause
      *
      * @param array $conditions
      * @param boolean $with_deleted
      * @return void
      */
-    public function where($conditions = [], $with_deleted = false) {
+    public function filter($conditions = [], $with_deleted = false) {
         $this->db->table($this->table);
         $this->apply_soft_delete($with_deleted);
         return $this->db->where($conditions);

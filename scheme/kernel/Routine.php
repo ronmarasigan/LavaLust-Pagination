@@ -46,39 +46,53 @@ if ( ! function_exists('load_class'))
 	 */
 	function &load_class($class, $directory = '', $params = NULL, $object_name = NULL)
 	{
-
 		$LAVA = Registry::instance();
-		$class_name = ucfirst(strtolower($class));
+		$class_name = ucfirst(strtolower($class)); // Used only as fallback
+		$object_name = $object_name !== NULL ? strtolower($object_name) : strtolower($class);
 
-		$object_name = !is_null($object_name) ? strtolower($object_name) : strtolower($class_name);
-
-		if($LAVA->get_object($object_name) != NULL)
-		{
+		// Return if already loaded
+		if ($LAVA->get_object($object_name) !== NULL) {
 			$object = $LAVA->get_object($object_name);
 			return $object;
 		}
 
-		foreach (array(APP_DIR, SYSTEM_DIR) as $path)
-    	{
-			$path = $path . $directory  . DIRECTORY_SEPARATOR . $class_name . '.php';
+		// Try to find the class file regardless of case
+		foreach ([APP_DIR, SYSTEM_DIR] as $base_path) {
+			$dir_path = rtrim($base_path . $directory, '/\\') . DIRECTORY_SEPARATOR;
 
-			if (file_exists($path))
-			{
-				if( ! class_exists($class_name, FALSE))
-				{
-					require_once $path;
+			if (is_dir($dir_path)) {
+				foreach (scandir($dir_path) as $file) {
+					if (strcasecmp($file, $class . '.php') === 0) {
+						require_once $dir_path . $file;
+
+						// Try to find the actual class name
+						$declared = get_declared_classes();
+						$match = NULL;
+						foreach ($declared as $declared_class) {
+							if (strcasecmp($declared_class, $class) === 0) {
+								$match = $declared_class;
+								break;
+							}
+						}
+
+						if ($match === NULL) {
+							throw new RuntimeException("Class '{$class}' not found in file.");
+						}
+
+						loaded_class($class, $object_name);
+						$instance = isset($params) ? new $match($params) : new $match();
+						$LAVA->store_object($object_name, $instance);
+
+						$object = $LAVA->get_object($object_name);
+						return $object;
+					}
 				}
 			}
 		}
 
-		loaded_class($class, $object_name);
-		$LAVA->store_object($object_name, isset($params) ? new $class($params) : new $class());
-		$object = $LAVA->get_object($object_name);
-		return $object;
+		throw new RuntimeException("Unable to locate the {$class} class in {$directory}.");
 	}
 }
-
-// --------------------------------------------------------------------
 
 if ( ! function_exists('loaded_class'))
 {
