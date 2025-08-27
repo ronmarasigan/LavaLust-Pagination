@@ -43,9 +43,7 @@
 		</tbody>
 	</table>
 	<?php
-	$LAVA =& lava_instance();
-	$LAVA->call->library('pagination');
-	echo $LAVA->pagination->paginate(); ?>
+	echo $page;?>
 	</div>
 </body>
 </html>
