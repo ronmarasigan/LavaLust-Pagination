@@ -68,6 +68,13 @@ class Model {
      */
     protected $has_soft_delete;
 
+    /**
+     * Fillable attributes for Mass Assignment
+     *
+     * @var array
+     */
+    protected $with = [];
+
       /**
      * Class Constructor
      * @return void
@@ -163,8 +170,65 @@ class Model {
     public function all($with_deleted = false) {
         $this->db->table($this->table);
         $this->apply_soft_delete($with_deleted);
-        return $this->db->get_all();
+        $records = $this->db->get_all();
+
+        // Handle eager loading
+        if (!empty($this->with) && !empty($records)) {
+            foreach ($records as &$record) {
+                foreach ($this->with as $relation) {
+                    if (method_exists($this, $relation)) {
+                        $rel = $this->{$relation}();
+
+                        switch ($rel['type']) {
+                            case 'has_one':
+                                $this->call->model($rel['related']);
+                                $record[$relation] = $this->{$rel['related']}
+                                    ->filter([$rel['foreign_key'] => $record[$this->primary_key]])
+                                    ->get();
+                                break;
+
+                            case 'has_many':
+                                $this->call->model($rel['related']);
+                                $record[$relation] = $this->{$rel['related']}
+                                    ->filter([$rel['foreign_key'] => $record[$this->primary_key]])
+                                    ->get_all();
+                                break;
+
+                            case 'many_to_many':
+                                $this->call->model($rel['related']);
+                                $query = "SELECT r.* FROM {$this->{$rel['related']}->table} r
+                                        JOIN {$rel['pivot_table']} p 
+                                        ON r.{$this->{$rel['related']}->primary_key} = p.{$rel['related_key']}
+                                        WHERE p.{$rel['current_key']} = ?";
+                                $record[$relation] = $this->db->raw($query, [$record[$this->primary_key]])
+                                    ->fetchAll(PDO::FETCH_ASSOC);
+                                break;
+
+                            case 'belongs_to':
+                                $this->call->model($rel['related']);
+                                $record[$relation] = $this->{$rel['related']}
+                                    ->find($record[$rel['foreign_key']]);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $records;
     }
+
+    /**
+     * Eager Load Relationships
+     *
+     * @param mixed $relations
+     * @return $this
+     */
+    public function with($relations) {
+        $this->with = is_array($relations) ? $relations : [$relations];
+        return $this;
+    }
+
 
     /**
      * Restore Soft Deleted Row
@@ -415,7 +479,7 @@ class Model {
         $this->call->model($related_model);
 
         if ($current_id) {
-            return $this->{$related_model}->where([$foreign_key => $current_id])->get_all();
+            return $this->{$related_model}->filter([$foreign_key => $current_id])->get_all();
         }
     
         return false;
@@ -433,7 +497,7 @@ class Model {
         $this->call->model($related_model);
     
         if ($current_id) {
-            return $this->{$related_model}->where([$foreign_key => $current_id])->get();
+            return $this->{$related_model}->filter([$foreign_key => $current_id])->get();
         }
     
         return false;

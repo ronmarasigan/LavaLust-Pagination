@@ -1,92 +1,128 @@
-<?php
-defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
-/**
- * ------------------------------------------------------------------
- * LavaLust - an opensource lightweight PHP MVC Framework
- * ------------------------------------------------------------------
- *
- * MIT License
- * 
- * Copyright (c) 2020 Ronald M. Marasigan
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package LavaLust
- * @author Ronald M. Marasigan <ronald.marasigan@yahoo.com>
- * @copyright Copyright 2020 (https://ronmarasigan.github.io)
- * @since Version 1
- * @link https://lavalust.pinoywap.org
- * @license https://opensource.org/licenses/MIT MIT License
- */
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>404 Page Not Found</title>
-	<style type="text/css">
-
-	*{
-	    transition: all 0.6s;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 | Not Found</title>
+  <style>
+	:root {
+	  --bg: #f6f8fb;
+	  --card: #ffffff;
+	  --text: #0f172a;
+	  --muted: #475569;
+	  --primary: #4f46e5;
+	  --border: #e5e7eb;
+	  --shadow: 0 10px 25px rgba(2, 6, 23, .06);
 	}
-
-	html {
-	    height: 100%;
+	* { box-sizing: border-box; }
+	html, body { height: 100%; margin: 0; }
+	body {
+	  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+	  background: var(--bg);
+	  color: var(--text);
+	  display: grid;
+	  place-items: center;
+	  padding: 2rem;
 	}
-
-	body{
-	    font-family: 'Lato', sans-serif;
-	    color: #888;
-	    margin: 0;
+	.card {
+	  width: 100%;
+	  max-width: 720px;
+	  background: var(--card);
+	  border: 1px solid var(--border);
+	  border-radius: 1.25rem;
+	  box-shadow: var(--shadow);
+	  padding: 2rem;
 	}
-
-	#main{
-	    display: table;
-	    width: 100%;
-	    height: 100vh;
-	    text-align: center;
+	.code {
+	  display: inline-flex;
+	  align-items: center;
+	  gap: .75rem;
+	  font-weight: 700;
+	  letter-spacing: .08em;
+	  color: var(--primary);
+	  background: rgba(79,70,229,.08);
+	  border: 1px solid rgba(79,70,229,.15);
+	  border-radius: 999px;
+	  padding: .4rem .9rem;
+	  margin-bottom: 1rem;
+	  font-size: .85rem;
+	  text-transform: uppercase;
 	}
-
-	.fof{
-		  display: table-cell;
-		  vertical-align: middle;
+	h1 {
+	  margin: 0 0 .4rem 0;
+	  font-size: clamp(1.6rem, 2.4vw + 1rem, 2.4rem);
+	  line-height: 1.2;
 	}
-
-	.fof h1{
-		  font-size: 50px;
-		  display: inline-block;
-		  padding-right: 12px;
-		  animation: type .5s alternate infinite;
+	p {
+	  margin: 0;
+	  color: var(--muted);
+	  font-size: 1.05rem;
 	}
-
-	@keyframes type{
-		  from{box-shadow: inset -3px 0px 0px #888;}
-		  to{box-shadow: inset -3px 0px 0px transparent;}
+	.actions {
+	  margin-top: 1.5rem;
+	  display: flex;
+	  gap: .75rem;
+	  flex-wrap: wrap;
 	}
-	</style>
+	.btn {
+	  display: inline-flex;
+	  align-items: center;
+	  gap: .5rem;
+	  padding: .75rem 1rem;
+	  border-radius: .8rem;
+	  border: 1px solid var(--border);
+	  background: #fff;
+	  color: var(--text);
+	  text-decoration: none;
+	  font-weight: 600;
+	  cursor: pointer;
+	  transition: background .2s ease, border-color .2s ease;
+	}
+	.btn:hover {
+	  background: #f3f4f6;
+	}
+	.btn.primary {
+	  background: var(--primary);
+	  color: white;
+	  border-color: transparent;
+	  box-shadow: 0 8px 18px rgba(79,70,229,.25);
+	}
+	.btn.primary:hover {
+	  background: #4338ca;
+	}
+	.hint {
+	  margin-top: 1.25rem;
+	  font-size: .9rem;
+	  color: var(--muted);
+	  border-top: 1px dashed var(--border);
+	  padding-top: 1rem;
+	  display: flex;
+	  gap: .5rem;
+	  flex-wrap: wrap;
+	}
+	.kbd {
+	  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+	  background: rgba(148,163,184,.15);
+	  border: 1px solid rgba(148,163,184,.35);
+	  border-bottom-width: 2px;
+	  border-radius: .5rem;
+	  padding: .2rem .45rem;
+	}
+  </style>
 </head>
 <body>
-	<div id="main">
-    	<div class="fof">
-	        <h1><?php echo $heading; ?></h1>
-	        <p><?php echo $message; ?></p>
-    	</div>
+  <main class="card" role="main" aria-labelledby="title">
+	<div class="code" aria-hidden="true">404 • Not Found</div>
+	<h1 id="title"><?= html_escape($heading) ?></h1>
+	<p><?= html_escape($message) ?></p>
+	<div class="actions">
+		<a class="btn primary" href="/">Go Home</a>
+	  	<a class="btn" href="javascript:history.back()">Go Back</a>
 	</div>
+	<div class="hint">
+		<span>Tip:</span>
+		<span>Check the URL, or press <span class="kbd">Ctrl</span> + <span class="kbd">L</span> to retype it.</span>
+	</div>
+  </main>
 </body>
 </html>
